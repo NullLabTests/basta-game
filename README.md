@@ -32,3 +32,14 @@ License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 Maintainer: NullLabTests
+
+## Screenshots
+
+Spanish mode (in-app):
+
+![Spanish mode screenshot](assets/screenshots/spanish-mode.png)
+
+English mode (in-app):
+
+![English mode screenshot](assets/screenshots/english-mode.png)
+
