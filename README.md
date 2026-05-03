@@ -37,9 +37,9 @@ Maintainer: NullLabTests
 
 Spanish mode (in-app):
 
-![Spanish mode screenshot](assets/screenshots/spanish-mode.png)
+![Spanish mode — UI in Spanish mode](assets/screenshots/spanish-mode.png)
 
 English mode (in-app):
 
-![English mode screenshot](assets/screenshots/english-mode.png)
+![English mode — UI in English mode](assets/screenshots/english-mode.png)
 
