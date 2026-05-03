@@ -239,6 +239,28 @@ function App(){
   }
 
   async function scoreRound(){
+    // helper to check cached validity synchronously for UI rendering
+    function isValidCachedLocal(cat, val, langParam){
+      if(!val || !val.trim()) return false;
+      const v = val.trim();
+      if(/name/i.test(cat) || /nombre/i.test(cat) || /apellido/i.test(cat)){
+        return /^[A-Za-zÁÉÍÓÚÑáéíóúñ' -]{2,}$/.test(v);
+      }
+      try{
+        const cacheKey = (langParam||'') + '::' + v.toLowerCase();
+        const raw = localStorage.getItem('basta_lookup_cache');
+        const cache = raw ? JSON.parse(raw) : {};
+        const entry = cache[cacheKey];
+        if(entry) return !!entry.valid;
+      }catch(e){}
+      return false;
+    }
+
+    // expose to render via closure - assign to outer name if missing
+    if(typeof window !== 'undefined' && !window._basta_isValidCached){
+      window._basta_isValidCached = isValidCachedLocal;
+    }
+
     const catCount = categories.length;
     const scoreTbl = players.map(()=>0);
     const validityCache = new Map();
@@ -273,6 +295,19 @@ function App(){
     if(winners.length===1){
       launchConfetti(3200);
     }
+  }
+
+  // small wrapper to call cached validity from render (safe sync)
+  function isValidCached(cat, val, langParam){
+    try{
+      if(typeof window !== 'undefined' && window._basta_isValidCached) return window._basta_isValidCached(cat,val,langParam);
+      // fallback to simple checks
+      if(!val || !val.trim()) return false;
+      if(/name/i.test(cat) || /nombre/i.test(cat) || /apellido/i.test(cat)){
+        return /^[A-Za-zÁÉÍÓÚÑáéíóúñ' -]{2,}$/.test(val.trim());
+      }
+      return false;
+    }catch(e){return false}
   }
 
   const t = translations[lang];
@@ -320,7 +355,7 @@ function App(){
                 React.createElement('tbody',null, categories.map((c,ci)=>React.createElement('tr',{key:ci},
                   React.createElement('td',null,c),
                   React.createElement('td',null, isActive ? React.createElement('input',{type:'text',value:(answers[pi]&&answers[pi][ci])||'',onChange:(e)=>setPlayerAnswer(pi,ci,e.target.value)}) : React.createElement('span',null, maskOrShow(pi,ci)) ),
-                  React.createElement('td',null, revealed ? ( validateAnswer(c,(answers[pi]&&answers[pi][ci])||'') ? (lang==='es'?'Válido':'Valid') : (lang==='es'?'Inválido':'Invalid') : ( (finished[pi] || (!roundActive && revealed)) ? (lang==='es'?'Terminado':'Done') : (isActive ? (lang==='es'?'Escribiendo':'Entering') : '—') ))
+                  React.createElement('td',null, revealed ? ( isValidCached(c,(answers[pi]&&answers[pi][ci])||'', lang) ? (lang==='es'?'Válido':'Valid') : (lang==='es'?'Inválido':'Invalid') ) : ( (finished[pi] || (!roundActive && revealed)) ? (lang==='es'?'Terminado':'Done') : (isActive ? (lang==='es'?'Escribiendo':'Entering') : '—') ))
                 )))
               )
             )
