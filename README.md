@@ -37,9 +37,9 @@ Maintainer: NullLabTests
 
 Spanish mode (in-app):
 
-![Spanish mode — UI in Spanish mode](assets/screenshots/spanish-mode-${TS}.png)
+[![Spanish mode — UI in Spanish mode](assets/screenshots/spanish-thumb.png)](https://raw.githubusercontent.com/NullLabTests/basta-game/main/assets/screenshots/spanish-mode-202605030305.png)
 
 English mode (in-app):
 
-![English mode — UI in English mode](assets/screenshots/english-mode-${TS}.png)
+[![English mode — UI in English mode](assets/screenshots/english-thumb.png)](https://raw.githubusercontent.com/NullLabTests/basta-game/main/assets/screenshots/english-mode-202605030305.png)
 
