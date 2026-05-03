@@ -88,7 +88,7 @@ function App(){
         ),
         React.createElement('div',null,
           React.createElement('label',null,'Categorías (coma-separadas)'),
-          React.createElement('input',{value:categories.join(','),onChange:e=>setCategories(e.target.value.split(',').map(s=>s.trim()).filter(Boolean),style:{width:300}})
+          React.createElement('input',{value:categories.join(','), onChange: e => setCategories(e.target.value.split(',').map(s=>s.trim()).filter(Boolean)), style:{width:300}})
         ),
         React.createElement('div',null,
           React.createElement('div',null, React.createElement('small',null,'Letra:'), ' ', React.createElement('span',{className:'timer'},letter||'--')),
