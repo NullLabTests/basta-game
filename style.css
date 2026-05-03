@@ -1,0 +1,17 @@
+*{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+body{background:linear-gradient(135deg,#f8f1e5,#ffeedd);margin:0;padding:20px}
+.container{max-width:1000px;margin:0 auto;background:white;padding:20px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.08)}
+h1{margin-top:0}
+.controls{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card{border:1px solid #eee;padding:12px;border-radius:8px;background:#fafafa}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #eee;padding:6px;text-align:left}
+.timer{font-weight:700;color:#b22222}
+.answers textarea{width:100%;height:38px}
+.results{margin-top:12px}
+button{background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+button.secondary{background:#6b7280}
+small{color:#6b7280}
+.footer{margin-top:12px;color:#555}
+@media(max-width:600px){.controls{flex-direction:column;align-items:stretch}}
