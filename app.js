@@ -6,12 +6,41 @@ function randomLetter(){
   return letters[Math.floor(Math.random()*letters.length)];
 }
 
-const defaultCategories = ['Nombre','Apellido','País/ciudad','Animal','Color','Fruta/verdura','Objeto','Profesión'];
+const defaultCategoriesES = ['Nombre','Apellido','País/ciudad','Animal','Color','Fruta/verdura','Objeto','Profesión'];
+const defaultCategoriesEN = ['First name','Last name','Country/City','Animal','Color','Fruit/Vegetable','Object','Profession'];
+
+const translations = {
+  es: {
+    title: 'BASTA - Web',
+    players: 'Jugadores (una por línea)',
+    categories: 'Categorías (coma-separadas)',
+    letter: 'Letra',
+    time: 'Tiempo',
+    start: 'Iniciar ronda',
+    stop: '¡Basta!',
+    changeLetter: 'Cambiar letra',
+    results: 'Resultados',
+    rules: 'Reglas: respuesta única = 10 pts, duplicado = 5 pts, vacío = 0 pts.'
+  },
+  en: {
+    title: 'BASTA - Web',
+    players: 'Players (one per line)',
+    categories: 'Categories (comma-separated)',
+    letter: 'Letter',
+    time: 'Time',
+    start: 'Start round',
+    stop: 'Stop!',
+    changeLetter: 'Change letter',
+    results: 'Results',
+    rules: 'Rules: unique answer = 10 pts, duplicate = 5 pts, blank = 0 pts.'
+  }
+};
 
 function App(){
+  const [lang, setLang] = useState('es');
   const [players, setPlayers] = useState(['Jugador 1','Jugador 2']);
   const [namesText, setNamesText] = useState('Jugador 1\nJugador 2');
-  const [categories, setCategories] = useState(defaultCategories);
+  const [categories, setCategories] = useState(defaultCategoriesES);
   const [letter, setLetter] = useState('');
   const [seconds, setSeconds] = useState(90);
   const [running, setRunning] = useState(false);
@@ -23,6 +52,12 @@ function App(){
     const list = namesText.split('\n').map(s=>s.trim()).filter(Boolean);
     if(list.length) setPlayers(list);
   },[namesText]);
+
+  // sync categories default when language changes and user hasn't modified manually
+  useEffect(()=>{
+    if(lang==='es') setCategories(defaultCategoriesES);
+    else setCategories(defaultCategoriesEN);
+  },[lang]);
 
   useEffect(()=>()=>{ if(timerRef.current) clearInterval(timerRef.current)},[]);
 
@@ -37,6 +72,7 @@ function App(){
         if(s<=1){
           clearInterval(timerRef.current);
           setRunning(false);
+          scoreRound();
         }
         return s-1;
       });
@@ -59,7 +95,6 @@ function App(){
   }
 
   function scoreRound(){
-    // compute scores simple: unique=10, duplicate=5, blank=0
     const catCount = categories.length;
     const scoreTbl = players.map(()=>0);
     for(let ci=0;ci<catCount;ci++){
@@ -78,50 +113,62 @@ function App(){
     setResults(scoreTbl);
   }
 
+  const t = translations[lang];
+
   return (
     React.createElement('div',{className:'container'},
-      React.createElement('h1',null,'BASTA - Web (Local React)'),
-      React.createElement('div',{className:'controls'},
-        React.createElement('div',null,
-          React.createElement('label',null,'Jugadores (una por línea)'),
-          React.createElement('textarea',{value:namesText,onChange:e=>setNamesText(e.target.value),rows:4,style:{width:240}})
-        ),
-        React.createElement('div',null,
-          React.createElement('label',null,'Categorías (coma-separadas)'),
-          React.createElement('input',{value:categories.join(','), onChange: e => setCategories(e.target.value.split(',').map(s=>s.trim()).filter(Boolean)), style:{width:300}})
-        ),
-        React.createElement('div',null,
-          React.createElement('div',null, React.createElement('small',null,'Letra:'), ' ', React.createElement('span',{className:'timer'},letter||'--')),
-          React.createElement('div',null, React.createElement('small',null,'Tiempo:'), ' ', React.createElement('span',{className:'timer'},seconds+'s')),
-          !running ? React.createElement('div',null,
-            React.createElement('button',{onClick:startRound},'Iniciar ronda'),
-            React.createElement('button',{className:'secondary',onClick:()=>{setLetter(randomLetter())},style:{marginLeft:8}},'Cambiar letra')
-          ) : React.createElement('button',{onClick:stopNow},'Basta!')
+      React.createElement('div',{className:'header'},
+        React.createElement('h1',null,t.title),
+        React.createElement('div',{className:'toggle'},
+          React.createElement('div',{className:'lang-btn '+(lang==='es'?'active':''), onClick:()=>setLang('es')},'ES'),
+          React.createElement('div',{className:'lang-btn '+(lang==='en'?'active':''), onClick:()=>setLang('en')},'EN')
         )
       ),
+
+      React.createElement('div',{className:'controls'},
+        React.createElement('div',{className:'panel'},
+          React.createElement('label',null,t.players),
+          React.createElement('textarea',{value:namesText,onChange:e=>setNamesText(e.target.value),rows:4,style:{minWidth:240}})
+        ),
+        React.createElement('div',{className:'panel'},
+          React.createElement('label',null,t.categories),
+          React.createElement('input',{type:'text',value:categories.join(','), onChange: e => setCategories(e.target.value.split(',').map(s=>s.trim()).filter(Boolean)), style:{minWidth:300}})
+        ),
+        React.createElement('div',null,
+          React.createElement('div',{style:{marginBottom:8}}, React.createElement('small',null,t.letter+':'), ' ', React.createElement('span',{className:'timer'},letter||'--')),
+          React.createElement('div',{style:{marginBottom:12}}, React.createElement('small',null,t.time+':'), ' ', React.createElement('span',{className:'timer'},seconds+'s')),
+          !running ? React.createElement('div',null,
+            React.createElement('button',{className:'btn primary',onClick:startRound},t.start),
+            React.createElement('button',{className:'btn secondary',onClick:()=>setLetter(randomLetter()),style:{marginLeft:8}},t.changeLetter)
+          ) : React.createElement('button',{className:'btn primary',onClick:stopNow},t.stop)
+        )
+      ),
+
       React.createElement('div',{className:'grid'},
         players.map((p,pi)=>React.createElement('div',{className:'card',key:pi},
           React.createElement('h3',null,p),
           React.createElement('div',{className:'answers'},
             React.createElement('table',{className:'table'},
-              React.createElement('thead',null, React.createElement('tr',null, React.createElement('th',null,'Categoría'), React.createElement('th',null,'Respuesta'))),
+              React.createElement('thead',null, React.createElement('tr',null, React.createElement('th',null,lang==='es'?'Categoría':'Category'), React.createElement('th',null,lang==='es'?'Respuesta':'Answer'))),
               React.createElement('tbody',null, categories.map((c,ci)=>React.createElement('tr',{key:ci},
                 React.createElement('td',null,c),
-                React.createElement('td',null, React.createElement('input',{value:(answers[pi]&&answers[pi][ci])||'',onChange:(e)=>updateAnswer(pi,ci,e.target.value)}))
+                React.createElement('td',null, React.createElement('input',{type:'text',value:(answers[pi]&&answers[pi][ci])||'',onChange:(e)=>updateAnswer(pi,ci,e.target.value)}))
               )))
             )
           )
         ))
       ),
+
       React.createElement('div',{className:'results'},
         results ? (
           React.createElement('div',null,
-            React.createElement('h3',null,'Resultados'),
+            React.createElement('h3',null,t.results),
             React.createElement('ul',null, players.map((p,i)=>React.createElement('li',{key:i},p+': '+results[i]+' pts')))
           )
         ):null
       ),
-      React.createElement('div',{className:'footer'},React.createElement('small',null,'Rules: unique answer = 10 pts, duplicates = 5 pts, blank = 0 pts. This is a local-play web version of BASTA.'))
+
+      React.createElement('div',{className:'footer'},React.createElement('small',null,lang==='es'?translations.es.rules:translations.en.rules))
     )
   );
 }
