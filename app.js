@@ -61,6 +61,46 @@ function playTone(frequency=440, duration=0.12, type='sine'){
   }catch(e){/* ignore audio errors */}
 }
 
+// simple confetti canvas animation
+function launchConfetti(duration=3000, count=140){
+  try{
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    canvas.style.position = 'fixed';
+    canvas.style.top = 0; canvas.style.left = 0; canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = 9999;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    window.addEventListener('resize', ()=>{ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; });
+    const colors = ['#6E57FF','#FF7AA2','#F8E1FF','#FFD27A'];
+    const particles = [];
+    for(let i=0;i<count;i++){
+      particles.push({ x: Math.random()*W, y: Math.random()*-H, r: Math.random()*6+4, vx:(Math.random()-0.5)*8, vy:Math.random()*4+2, color: colors[Math.floor(Math.random()*colors.length)], tilt: Math.random()*Math.PI });
+    }
+    const start = Date.now();
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      const t = Date.now()-start;
+      for(const p of particles){
+        p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+        p.tilt += 0.1;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.sin(p.tilt)*0.3);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(0,0,p.r,p.r*0.6,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+      if(t < duration) requestAnimationFrame(draw); else { document.body.removeChild(canvas); }
+    }
+    draw();
+  }catch(e){/* ignore confetti errors */}
+}
+
 function App(){
   const [lang, setLang] = useState('es');
   const [players, setPlayers] = useState(['Jugador 1','Jugador 2']);
@@ -168,20 +208,34 @@ function App(){
     if(/name/i.test(cat) || /nombre/i.test(cat) || /apellido/i.test(cat)){
       return /^[A-Za-zÁÉÍÓÚÑáéíóúñ' -]{2,}$/.test(v);
     }
-    // Use Wikipedia opensearch (CORS-friendly with origin=*) to validate terms in ES/EN
-    const query = v;
-    const langDomains = (lang === 'es') ? ['es','en'] : ['en','es'];
-    for(const ld of langDomains){
-      try{
-        const url = `https://${ld}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&namespace=0&format=json&origin=*`;
-        const res = await fetch(url).then(r=>r.json());
-        if(Array.isArray(res) && res[1] && res[1].length>0) return true;
-      }catch(e){
-        // ignore fetch errors and try next
+    // caching using localStorage to avoid repeat lookups
+    try{
+      const cacheKey = (lang||'') + '::' + v.toLowerCase();
+      const raw = localStorage.getItem('basta_lookup_cache');
+      const cache = raw ? JSON.parse(raw) : {};
+      const entry = cache[cacheKey];
+      const TTL = 1000 * 60 * 60 * 24 * 30; // 30 days
+      if(entry && (Date.now() - entry.ts) < TTL){
+        return !!entry.valid;
       }
+      // Use Wikipedia opensearch (CORS-friendly with origin=*) to validate terms in ES/EN
+      const query = v;
+      const langDomains = (lang === 'es') ? ['es','en'] : ['en','es'];
+      let found = false;
+      for(const ld of langDomains){
+        try{
+          const url = `https://${ld}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&namespace=0&format=json&origin=*`;
+          const res = await fetch(url).then(r=>r.json());
+          if(Array.isArray(res) && res[1] && res[1].length>0){ found = true; break; }
+        }catch(e){ /* ignore and continue */ }
+      }
+      cache[cacheKey] = { valid: !!found, ts: Date.now() };
+      try{ localStorage.setItem('basta_lookup_cache', JSON.stringify(cache)); }catch(e){/* ignore storage errors */}
+      return !!found;
+    }catch(e){
+      // on any error, fallback to false
+      return false;
     }
-    // no match on Wikipedia; consider invalid
-    return false;
   }
 
   async function scoreRound(){
@@ -211,9 +265,14 @@ function App(){
       }
     }
     setResults(scoreTbl);
-    // play success tone and mark winner for animation
+    // play success tone
     playTone(1200,0.15,'sine');
-    // add winner flag to UI by applying a class later (handled at render)
+    // determine winners and show confetti for single winner
+    const maxScore = Math.max(...scoreTbl);
+    const winners = scoreTbl.map((s,i)=> s===maxScore ? i : -1).filter(i=>i!==-1);
+    if(winners.length===1){
+      launchConfetti(3200);
+    }
   }
 
   const t = translations[lang];
