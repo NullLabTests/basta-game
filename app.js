@@ -201,7 +201,7 @@ function App(){
     return v? '***' : '';
   }
 
-  async function validateAnswerOnline(cat, val){
+  async function validateAnswerOnline(cat, val, langParam){
     if(!val || !val.trim()) return false;
     const v = val.trim();
     // quick client-side name heuristic
@@ -210,7 +210,7 @@ function App(){
     }
     // caching using localStorage to avoid repeat lookups
     try{
-      const cacheKey = (lang||'') + '::' + v.toLowerCase();
+      const cacheKey = (langParam||'') + '::' + v.toLowerCase();
       const raw = localStorage.getItem('basta_lookup_cache');
       const cache = raw ? JSON.parse(raw) : {};
       const entry = cache[cacheKey];
@@ -220,7 +220,7 @@ function App(){
       }
       // Use Wikipedia opensearch (CORS-friendly with origin=*) to validate terms in ES/EN
       const query = v;
-      const langDomains = (lang === 'es') ? ['es','en'] : ['en','es'];
+      const langDomains = (langParam === 'es') ? ['es','en'] : ['en','es'];
       let found = false;
       for(const ld of langDomains){
         try{
@@ -256,7 +256,7 @@ function App(){
         let valid = validityCache.has(key) ? validityCache.get(key) : null;
         if(valid === null || valid === undefined){
           try{
-            valid = await validateAnswerOnline(categories[ci], sample);
+            valid = await validateAnswerOnline(categories[ci], sample, lang);
           }catch(e){ valid = false; }
           validityCache.set(key, valid);
         }
