@@ -161,31 +161,33 @@ function App(){
     return v? '***' : '';
   }
 
-  function validateAnswer(cat, val){
+  async function validateAnswerOnline(cat, val){
     if(!val || !val.trim()) return false;
-    const v = val.trim().toLowerCase();
+    const v = val.trim();
+    // quick client-side name heuristic
     if(/name/i.test(cat) || /nombre/i.test(cat) || /apellido/i.test(cat)){
-      return /^[A-Za-zÁÉÍÓÚÑáéíóúñ' -]{2,}$/.test(val.trim());
+      return /^[A-Za-zÁÉÍÓÚÑáéíóúñ' -]{2,}$/.test(v);
     }
-    if(/animal/i.test(cat) || /animal/i.test(cat.toLowerCase())){
-      return animals.includes(v);
+    // Use Wikipedia opensearch (CORS-friendly with origin=*) to validate terms in ES/EN
+    const query = v;
+    const langDomains = (lang === 'es') ? ['es','en'] : ['en','es'];
+    for(const ld of langDomains){
+      try{
+        const url = `https://${ld}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&namespace=0&format=json&origin=*`;
+        const res = await fetch(url).then(r=>r.json());
+        if(Array.isArray(res) && res[1] && res[1].length>0) return true;
+      }catch(e){
+        // ignore fetch errors and try next
+      }
     }
-    if(/color/i.test(cat) || /color/i.test(cat.toLowerCase())){
-      return colors.includes(v);
-    }
-    if(/país/i.test(cat) || /country/i.test(cat.toLowerCase()) || /ciudad/i.test(cat)){
-      return countries.includes(v);
-    }
-    if(/profes/i.test(cat) || /profession/i.test(cat.toLowerCase())){
-      return professions.includes(v);
-    }
-    // fallback: accept non-empty
-    return true;
+    // no match on Wikipedia; consider invalid
+    return false;
   }
 
-  function scoreRound(){
+  async function scoreRound(){
     const catCount = categories.length;
     const scoreTbl = players.map(()=>0);
+    const validityCache = new Map();
     for(let ci=0; ci<catCount; ci++){
       const map = new Map();
       players.forEach((p,pi)=>{
@@ -196,17 +198,22 @@ function App(){
       });
       for(const [key, arr] of map.entries()){
         if(key.startsWith('__blank__')) continue;
-        // only valid answers get points
-        const firstIdx = arr[0];
-        const sample = (answers[firstIdx] && answers[firstIdx][ci]) || '';
-        const valid = validateAnswer(categories[ci], sample);
+        const sample = (answers[arr[0]] && answers[arr[0]][ci]) || '';
+        let valid = validityCache.has(key) ? validityCache.get(key) : null;
+        if(valid === null || valid === undefined){
+          try{
+            valid = await validateAnswerOnline(categories[ci], sample);
+          }catch(e){ valid = false; }
+          validityCache.set(key, valid);
+        }
         if(!valid) continue;
         if(arr.length===1) scoreTbl[arr[0]] += 10; else arr.forEach(i=>scoreTbl[i]+=5);
       }
     }
     setResults(scoreTbl);
-    // play success tone
+    // play success tone and mark winner for animation
     playTone(1200,0.15,'sine');
+    // add winner flag to UI by applying a class later (handled at render)
   }
 
   const t = translations[lang];
